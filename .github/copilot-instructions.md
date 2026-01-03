@@ -306,7 +306,7 @@ pydantic-deepagents-chutesai/
 
 ### Optional Dependencies
 
-- `pydantic-ai-backend[docker]>=0.0.3`: For DockerSandbox support (install with `pip install -e .[sandbox]` or `uv sync --extra sandbox`)
+- `pydantic-ai-backend[docker]>=0.0.3`: For DockerSandbox support (install with `pip install -e '.[sandbox]'` or `uv sync --extra sandbox`)
 
 ## Installation Commands
 
@@ -318,10 +318,10 @@ uv sync
 pip install -e .
 
 # With dev dependencies
-pip install -e .[dev]
+pip install -e '.[dev]'
 
 # With sandbox support (for DockerSandbox backend)
-pip install -e .[sandbox]
+pip install -e '.[sandbox]'
 # or with uv:
 # uv sync --extra sandbox
 ```
