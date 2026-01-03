@@ -1,7 +1,7 @@
 """Foundational structure for multi-agent code generation system.
 
 This module provides the core workflow orchestration for a multi-agent code
-generation system using pydantic-deep agents. It defines the state management
+generation system using pydantic_deep agents. It defines the state management
 structure and initialization logic for the workflow.
 """
 
