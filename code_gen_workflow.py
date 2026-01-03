@@ -7,12 +7,15 @@ structure and initialization logic for the workflow.
 
 import asyncio
 import os
+from typing import Any
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
+from pydantic_ai import Agent
 from pydantic_deep import (
     DeepAgentDeps,
     StateBackend,
+    SubAgentConfig,
     create_deep_agent,
 )
 
@@ -73,9 +76,143 @@ def initialize_orchestrator():
         include_todo=True,
         include_filesystem=True,
         include_subagents=True,
+        subagents=[
+            SubAgentConfig(
+                name="task-decomposer",
+                description=(
+                    "Breaks down user requests into specific, implementable "
+                    "subtasks with clear acceptance criteria"
+                ),
+                instructions=(
+                    "You are a Task Decomposition Specialist. Given a user "
+                    "request or specification:\n"
+                    "1. Analyze the request for functional requirements\n"
+                    "2. Identify all components that need to be implemented\n"
+                    "3. Break down into discrete, atomic tasks (each task should be "
+                    "completable independently)\n"
+                    "4. For each task, specify:\n"
+                    "   - Task description\n"
+                    "   - File(s) to be created/modified\n"
+                    "   - Key implementation requirements\n"
+                    "   - Acceptance criteria\n"
+                    "5. Order tasks by dependency (tasks with no dependencies first)\n"
+                    "6. Output a structured list of tasks in the format:\n"
+                    "   TASK_{n}: [description]\n"
+                    "   FILE: [target file path]\n"
+                    "   REQUIREMENTS:\n"
+                    "   - [bullet points]\n"
+                    "   ACCEPTANCE: [criteria for completion]\n\n"
+                    "Example output:\n"
+                    "TASK_1: Create core Fibonacci calculation function\n"
+                    "FILE: /src/fibonacci.py\n"
+                    "REQUIREMENTS:\n"
+                    "- Function named 'fibonacci' accepting integer n\n"
+                    "- Handle n < 0 with ValueError\n"
+                    "- Return list of Fibonacci numbers up to n\n"
+                    "ACCEPTANCE: Function returns correct Fibonacci sequence for valid inputs"
+                ),
+            ),
+        ],
     )
 
     return orchestrator
+
+
+async def decompose_tasks(
+    orchestrator: Agent[DeepAgentDeps, Any],
+    user_request: str,
+    deps: DeepAgentDeps,
+    workflow_state: WorkflowState,
+) -> list[str]:
+    """Decompose user request into implementable subtasks.
+
+    Uses the task-decomposer subagent to break down a user request into
+    specific, atomic tasks with clear acceptance criteria.
+
+    Args:
+        orchestrator: The orchestrator agent instance.
+        user_request: The user's specification or requirement.
+        deps: DeepAgentDeps containing the backend for file operations.
+        workflow_state: WorkflowState instance to update with tasks.
+
+    Returns:
+        List of parsed task descriptions.
+
+    Raises:
+        ValueError: If workflow_state is None or invalid.
+        RuntimeError: If task decomposition fails or produces no tasks.
+    """
+    # Validate workflow_state
+    if not isinstance(workflow_state, WorkflowState):
+        raise ValueError("workflow_state must be a valid WorkflowState instance")
+
+    print("\n" + "=" * 70)
+    print("🔍 Decomposing Tasks")
+    print("=" * 70)
+
+    # Call the task-decomposer subagent explicitly
+    result = await orchestrator.run(
+        (
+            "Use the task-decomposer subagent to decompose the following user request into "
+            "implementable subtasks.\n\n"
+            f"User request: {user_request}"
+        ),
+        deps=deps,
+    )
+
+    # Validate result output
+    if not result.output:
+        raise RuntimeError(
+            "Task decomposition failed: orchestrator returned no output. "
+            "Ensure the task-decomposer subagent is properly configured."
+        )
+
+    # Parse the response to extract tasks
+    response_text = result.output
+    tasks = []
+
+    # Split response into lines and look for TASK_ markers
+    lines = response_text.split("\n")
+    current_task = []
+
+    for line in lines:
+        if line.strip().startswith("TASK_"):
+            if current_task:
+                # Save previous task
+                task_text = "\n".join(current_task)
+                tasks.append(task_text)
+            current_task = [line]
+        elif current_task:
+            # Preserve empty lines within task blocks for formatting
+            current_task.append(line)
+
+    # Add the last task
+    if current_task:
+        task_text = "\n".join(current_task)
+        tasks.append(task_text)
+
+    # Validate that tasks were found
+    if not tasks:
+        raise RuntimeError(
+            "Task decomposition failed: no tasks found in orchestrator response. "
+            "The task-decomposer may not have produced properly formatted output."
+        )
+
+    # Update workflow state
+    workflow_state.tasks = tasks
+    workflow_state.implementation_status = {f"task_{i + 1}": "pending" for i in range(len(tasks))}
+
+    # Write tasks to file using backend with error handling
+    tasks_content = "\n\n".join(tasks)
+    try:
+        deps.backend.write("/workflow/tasks.txt", tasks_content)
+    except Exception as exc:
+        raise RuntimeError("Failed to persist decomposed tasks to /workflow/tasks.txt") from exc
+
+    print(f"✓ Decomposed into {len(tasks)} tasks")
+    print("✓ Tasks written to /workflow/tasks.txt")
+
+    return tasks
 
 
 async def main() -> None:
@@ -119,6 +256,22 @@ async def main() -> None:
         orchestrator = initialize_orchestrator()
         model_name = os.getenv("CHUTES_MODEL", "openai:gpt-4.1")
         print(f"✓ Orchestrator Agent initialized with model: {model_name}")
+
+        # Call decompose_tasks after orchestrator initialization
+        print("\n" + "=" * 70)
+        print("📋 User Request")
+        print("=" * 70)
+        print(f"{user_request}\n")
+
+        tasks = await decompose_tasks(orchestrator, user_request, deps, workflow_state)
+
+        # Print the decomposed tasks in a formatted way
+        print("\n" + "=" * 70)
+        print("📝 Decomposed Tasks")
+        print("=" * 70)
+        for task in tasks:
+            print(f"\n{task}")
+            print("-" * 70)
 
         # Call orchestrator agent with the user request
         print("\n" + "=" * 70)
