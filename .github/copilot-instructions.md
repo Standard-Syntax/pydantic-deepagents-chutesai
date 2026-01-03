@@ -224,7 +224,7 @@ uv run ruff check
 
 ```bash
 # Run type checker
-uv run pyright
+ty check
 ```
 
 ### Ruff Configuration
@@ -302,7 +302,7 @@ pydantic-deepagents-chutesai/
 - `pytest>=9.0.0`: Testing framework
 - `pytest-asyncio>=0.23.0`: Async test support
 - `ruff>=0.8.0`: Fast Python linter and formatter
-- `pyright>=1.1.0`: Static type checker
+- `ty>=0.0.8`: Static type checker
 
 ### Optional Dependencies
 

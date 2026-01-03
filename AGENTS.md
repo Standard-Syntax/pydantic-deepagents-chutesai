@@ -70,7 +70,7 @@ def calculate_total(items: list[dict], tax_rate: float = 0.0) -> float:
 
 - **MUST** use type hints for all function signatures (parameters and return values)
 - **NEVER** use `Any` type unless absolutely necessary
-- **MUST** run mypy and resolve all type errors
+- **MUST** run ty and resolve all type errors
 - Use `Optional[T]` or `T | None` for nullable types
 
 ## Error Handling
@@ -143,14 +143,14 @@ def calculate_total(items: list[dict], tax_rate: float = 0.0) -> float:
 ## Tools
 
 - **MUST** use Ruff for code formatting and linting (replaces Black, isort, flake8)
-- **MUST** use mypy for static type checking
+- **MUST** use ty for static type checking
 - Use `uv` for package management (faster alternative to pip)
 - Use pytest for testing
 
 ## Before Committing
 
 - [ ] All tests pass
-- [ ] Type checking passes (mypy)
+- [ ] Type checking passes (ty)
 - [ ] Code formatter and linter pass (Ruff)
 - [ ] All functions have docstrings and type hints
 - [ ] No commented-out code or debug statements

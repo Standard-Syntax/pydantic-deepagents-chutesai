@@ -45,7 +45,7 @@ description: Use this for implementing new features (small or large). Focus on a
 
 - Always run:
   - `ruff check .`
-  - `pyright`
+  - `ty`
   - `pytest`
 (Use the repo’s canonical commands in `.github/copilot-instructions.md`.)
 

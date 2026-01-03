@@ -37,7 +37,7 @@ jobs:
               run: |
                   python -m pip install --upgrade pip setuptools wheel
 
-            # Preinstall runtime + dev tooling so the agent can immediately run ruff/pyright/pytest later.
+            # Preinstall runtime + dev tooling so the agent can immediately run ruff/ty/pytest later.
             # (Checks themselves are intentionally NOT run here.)
             - name: Install dependencies (editable + dev)
               run: |

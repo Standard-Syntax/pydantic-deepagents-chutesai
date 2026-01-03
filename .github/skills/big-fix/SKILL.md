@@ -12,7 +12,7 @@ description: Use this for complex bug fixes that span multiple modules or requir
 - Identify root cause, not just symptoms.
 - Fix with minimal, targeted changes.
 - Add regression tests that fail before the fix and pass after.
-- Keep coverage at or above 90% and ensure ruff + pyright strict pass.
+- Keep coverage at or above 90% and ensure ruff + ty strict pass.
 
 ## Step-by-step
 
@@ -36,7 +36,7 @@ description: Use this for complex bug fixes that span multiple modules or requir
 1) Validate
 
 - Run the full validation workflow from `.github/copilot-instructions.md`:
-  - ruff → pyright → pytest
+  - ruff → ty → pytest
 - If the fix impacts parsing/extraction (PDF/Excel/YAML), add focused tests:
   - PDF/table extraction: use tiny fixtures
   - Excel reading: use minimal xlsx fixtures or generated workbooks

@@ -21,7 +21,7 @@ dev = [
     "pytest>=9.0.0",
     "pytest-asyncio>=0.23.0",
     "ruff>=0.8.0",
-    "pyright>=1.1.0",
+    "ty>=0.0.8",
 ]
 sandbox = [
     "pydantic-ai-backend[docker]>=0.0.3",

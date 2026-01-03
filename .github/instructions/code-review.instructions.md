@@ -254,7 +254,7 @@ Assume the repository may already use tools such as:
 
 - Formatters (for example, `black`, `isort`)
 - Linters (for example, `ruff`, `flake8`, `pylint`)
-- Type checkers (for example, `mypy`, `pyright`)
+- Type checkers (for example, `ty`, `mypy`, `pyright`)
 - Security scanners (for example, `bandit`)
 
 Avoid duplicating comments that these tools already handle unless:

@@ -386,7 +386,7 @@ uv run ruff check --fix
 ### Type Checking
 
 ```bash
-uv run pyright
+ty check
 ```
 
 ## Resources
