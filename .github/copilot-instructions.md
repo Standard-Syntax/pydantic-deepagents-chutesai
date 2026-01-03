@@ -244,8 +244,11 @@ Create `.env` file from `.env.example`:
 OPENAI_API_KEY=your-chutes-ai-api-key
 OPENAI_BASE_URL=https://api.chutes.ai/v1
 
-# Model to use
-CHUTES_MODEL=openai:gpt-4
+# Model to use (can be just model name or with provider prefix)
+# The code will use "openai:gpt-4" as default if not set
+CHUTES_MODEL=gpt-4
+# or with provider prefix:
+# CHUTES_MODEL=openai:gpt-4
 ```
 
 ### Loading Environment Variables
@@ -303,7 +306,7 @@ pydantic-deepagents-chutesai/
 
 ### Optional Dependencies
 
-- `pydantic-ai-backend[docker]>=0.0.3`: For DockerSandbox support (install with `uv add 'pydantic-ai-backend[docker]>=0.0.3'`)
+- `pydantic-ai-backend[docker]>=0.0.3`: For DockerSandbox support (install with `pip install -e .[sandbox]` or `uv sync --extra sandbox`)
 
 ## Installation Commands
 
@@ -317,8 +320,10 @@ pip install -e .
 # With dev dependencies
 pip install -e .[dev]
 
-# With sandbox support
-uv add 'pydantic-ai-backend[docker]>=0.0.3'
+# With sandbox support (for DockerSandbox backend)
+pip install -e .[sandbox]
+# or with uv:
+# uv sync --extra sandbox
 ```
 
 ## Best Practices
