@@ -144,7 +144,6 @@ async def decompose_tasks(orchestrator, user_request: str, deps, workflow_state)
     # Parse the response to extract tasks
     response_text = result.output
     tasks = []
-    task_lines = []
 
     # Split response into lines and look for TASK_ markers
     lines = response_text.split("\n")
@@ -156,7 +155,6 @@ async def decompose_tasks(orchestrator, user_request: str, deps, workflow_state)
                 # Save previous task
                 task_text = "\n".join(current_task)
                 tasks.append(task_text)
-                task_lines.append(task_text)
             current_task = [line]
         elif current_task and line.strip():
             current_task.append(line)
@@ -165,14 +163,13 @@ async def decompose_tasks(orchestrator, user_request: str, deps, workflow_state)
     if current_task:
         task_text = "\n".join(current_task)
         tasks.append(task_text)
-        task_lines.append(task_text)
 
     # Update workflow state
     workflow_state.tasks = tasks
     workflow_state.implementation_status = {f"task_{i + 1}": "pending" for i in range(len(tasks))}
 
     # Write tasks to file using backend
-    tasks_content = "\n\n".join(task_lines)
+    tasks_content = "\n\n".join(tasks)
     deps.backend.write("/workflow/tasks.txt", tasks_content)
 
     print(f"✓ Decomposed into {len(tasks)} tasks")
