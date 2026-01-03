@@ -7,9 +7,11 @@ structure and initialization logic for the workflow.
 
 import asyncio
 import os
+from typing import Any
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
+from pydantic_ai import Agent
 from pydantic_deep import (
     DeepAgentDeps,
     StateBackend,
@@ -116,7 +118,12 @@ def initialize_orchestrator():
     return orchestrator
 
 
-async def decompose_tasks(orchestrator, user_request: str, deps, workflow_state):
+async def decompose_tasks(
+    orchestrator: Agent[DeepAgentDeps, Any],
+    user_request: str,
+    deps: DeepAgentDeps,
+    workflow_state: WorkflowState,
+) -> list[str]:
     """Decompose user request into implementable subtasks.
 
     Uses the task-decomposer subagent to break down a user request into
@@ -130,16 +137,35 @@ async def decompose_tasks(orchestrator, user_request: str, deps, workflow_state)
 
     Returns:
         List of parsed task descriptions.
+
+    Raises:
+        ValueError: If workflow_state is None or invalid.
+        RuntimeError: If task decomposition fails or produces no tasks.
     """
+    # Validate workflow_state
+    if not isinstance(workflow_state, WorkflowState):
+        raise ValueError("workflow_state must be a valid WorkflowState instance")
+
     print("\n" + "=" * 70)
     print("🔍 Decomposing Tasks")
     print("=" * 70)
 
-    # Call the task-decomposer subagent
+    # Call the task-decomposer subagent explicitly
     result = await orchestrator.run(
-        f"Decompose this request into implementable subtasks: {user_request}",
+        (
+            "Use the task-decomposer subagent to decompose the following user request into "
+            "implementable subtasks.\n\n"
+            f"User request: {user_request}"
+        ),
         deps=deps,
     )
+
+    # Validate result output
+    if not result.output:
+        raise RuntimeError(
+            "Task decomposition failed: orchestrator returned no output. "
+            "Ensure the task-decomposer subagent is properly configured."
+        )
 
     # Parse the response to extract tasks
     response_text = result.output
@@ -156,7 +182,8 @@ async def decompose_tasks(orchestrator, user_request: str, deps, workflow_state)
                 task_text = "\n".join(current_task)
                 tasks.append(task_text)
             current_task = [line]
-        elif current_task and line.strip():
+        elif current_task:
+            # Preserve empty lines within task blocks for formatting
             current_task.append(line)
 
     # Add the last task
@@ -164,13 +191,23 @@ async def decompose_tasks(orchestrator, user_request: str, deps, workflow_state)
         task_text = "\n".join(current_task)
         tasks.append(task_text)
 
+    # Validate that tasks were found
+    if not tasks:
+        raise RuntimeError(
+            "Task decomposition failed: no tasks found in orchestrator response. "
+            "The task-decomposer may not have produced properly formatted output."
+        )
+
     # Update workflow state
     workflow_state.tasks = tasks
     workflow_state.implementation_status = {f"task_{i + 1}": "pending" for i in range(len(tasks))}
 
-    # Write tasks to file using backend
+    # Write tasks to file using backend with error handling
     tasks_content = "\n\n".join(tasks)
-    deps.backend.write("/workflow/tasks.txt", tasks_content)
+    try:
+        deps.backend.write("/workflow/tasks.txt", tasks_content)
+    except Exception as exc:
+        raise RuntimeError("Failed to persist decomposed tasks to /workflow/tasks.txt") from exc
 
     print(f"✓ Decomposed into {len(tasks)} tasks")
     print("✓ Tasks written to /workflow/tasks.txt")
